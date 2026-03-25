@@ -391,6 +391,206 @@ def load_observations(con, files):
     return count
 
 
+
+
+# ---------------------------------------------------------------------------
+# Encounters extractor
+# ---------------------------------------------------------------------------
+
+def extract_encounters(entries, patient_id):
+    """
+    Extract Encounter resources. Used to identify qualifying visit types
+    for STARS and HEDIS denominator logic (outpatient, office visits).
+    """
+    encounters = []
+    for entry in entries:
+        resource = entry.get("resource", {})
+        if resource.get("resourceType") != "Encounter":
+            continue
+
+        # Encounter class (ambulatory, inpatient, emergency, etc.)
+        encounter_class = resource.get("class", {}).get("code", "")
+
+        # Encounter type (more specific visit type)
+        encounter_type = ""
+        encounter_type_display = ""
+        type_list = resource.get("type", [])
+        if type_list:
+            coding = type_list[0].get("coding", [])
+            if coding:
+                encounter_type = coding[0].get("code", "")
+                encounter_type_display = coding[0].get("display", "")
+
+        # Start and end dates
+        period = resource.get("period", {})
+        start_date = period.get("start")
+        end_date = period.get("end")
+
+        # Status
+        status = resource.get("status", "")
+
+        encounters.append({
+            "encounter_id": resource.get("id"),
+            "patient_id": patient_id,
+            "encounter_class": encounter_class,
+            "encounter_type": encounter_type,
+            "encounter_type_display": encounter_type_display,
+            "start_date": start_date,
+            "end_date": end_date,
+            "status": status,
+        })
+
+    return encounters
+
+
+def create_encounters_table(con):
+    con.execute("""
+        CREATE TABLE IF NOT EXISTS encounters (
+            encounter_id            VARCHAR,
+            patient_id              VARCHAR,
+            encounter_class         VARCHAR,
+            encounter_type          VARCHAR,
+            encounter_type_display  VARCHAR,
+            start_date              TIMESTAMP,
+            end_date                TIMESTAMP,
+            status                  VARCHAR
+        )
+    """)
+
+
+def load_encounters(con, files):
+    create_encounters_table(con)
+    con.execute("DELETE FROM encounters")
+
+    all_encounters = []
+    for filepath in files:
+        entries = load_bundle(filepath)
+        patient_id = None
+        for entry in entries:
+            if entry.get("resource", {}).get("resourceType") == "Patient":
+                patient_id = entry["resource"].get("id")
+                break
+        if patient_id:
+            all_encounters.extend(extract_encounters(entries, patient_id))
+
+    if not all_encounters:
+        print("No encounters extracted.")
+        return 0
+
+    df = pd.DataFrame(all_encounters)
+    df["start_date"] = pd.to_datetime(df["start_date"], errors="coerce", format="mixed", utc=True)
+    df["end_date"] = pd.to_datetime(df["end_date"], errors="coerce", format="mixed", utc=True)
+
+    con.execute("INSERT INTO encounters SELECT * FROM df")
+    count = con.execute("SELECT COUNT(*) FROM encounters").fetchone()[0]
+    print(f"Loaded {count} encounters.")
+    return count
+
+
+# ---------------------------------------------------------------------------
+# Medications extractor
+# ---------------------------------------------------------------------------
+
+def extract_medications(entries, patient_id):
+    """
+    Extract MedicationRequest resources. Used for:
+    - C14 PDC denominator (RAS antagonist prescriptions)
+    - Identifying antihypertensive therapy
+    RxNorm codes are used for drug identification.
+    """
+    medications = []
+    for entry in entries:
+        resource = entry.get("resource", {})
+        if resource.get("resourceType") != "MedicationRequest":
+            continue
+
+        # RxNorm code and display
+        rxnorm_code = ""
+        drug_display = ""
+        med_concept = resource.get("medicationCodeableConcept", {})
+        for coding in med_concept.get("coding", []):
+            rxnorm_code = coding.get("code", "")
+            drug_display = coding.get("display", "")
+            break
+
+        # Authored date (when the prescription was written)
+        authored_date = resource.get("authoredOn")
+
+        # Status: active, completed, stopped
+        status = resource.get("status", "")
+
+        # Dosage and days supply if available
+        days_supply = None
+        dosage_list = resource.get("dosageInstruction", [])
+        if dosage_list:
+            timing = dosage_list[0].get("timing", {})
+            repeat = timing.get("repeat", {})
+            # Synthea sometimes includes boundsDuration
+            bounds = repeat.get("boundsDuration", {})
+            if bounds.get("unit") == "d":
+                days_supply = bounds.get("value")
+
+        # Encounter reference
+        encounter_ref = resource.get("encounter", {}).get("reference", "")
+        encounter_id = encounter_ref.split("/")[-1] if encounter_ref else None
+
+        medications.append({
+            "medication_id": resource.get("id"),
+            "patient_id": patient_id,
+            "rxnorm_code": rxnorm_code,
+            "drug_display": drug_display,
+            "authored_date": authored_date,
+            "status": status,
+            "days_supply": days_supply,
+            "encounter_id": encounter_id,
+        })
+
+    return medications
+
+
+def create_medications_table(con):
+    con.execute("""
+        CREATE TABLE IF NOT EXISTS medications (
+            medication_id     VARCHAR,
+            patient_id        VARCHAR,
+            rxnorm_code       VARCHAR,
+            drug_display      VARCHAR,
+            authored_date     TIMESTAMP,
+            status            VARCHAR,
+            days_supply       DOUBLE,
+            encounter_id      VARCHAR
+        )
+    """)
+
+
+def load_medications(con, files):
+    create_medications_table(con)
+    con.execute("DELETE FROM medications")
+
+    all_medications = []
+    for filepath in files:
+        entries = load_bundle(filepath)
+        patient_id = None
+        for entry in entries:
+            if entry.get("resource", {}).get("resourceType") == "Patient":
+                patient_id = entry["resource"].get("id")
+                break
+        if patient_id:
+            all_medications.extend(extract_medications(entries, patient_id))
+
+    if not all_medications:
+        print("No medications extracted.")
+        return 0
+
+    df = pd.DataFrame(all_medications)
+    df["authored_date"] = pd.to_datetime(df["authored_date"], errors="coerce", format="mixed", utc=True)
+
+    con.execute("INSERT INTO medications SELECT * FROM df")
+    count = con.execute("SELECT COUNT(*) FROM medications").fetchone()[0]
+    print(f"Loaded {count} medications.")
+    return count
+
+
 # ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
@@ -404,5 +604,7 @@ if __name__ == "__main__":
     load_patients(con, files)
     load_conditions(con, files)
     load_observations(con, files)
+    load_encounters(con, files)
+    load_medications(con, files)
     con.close()
     print("Done.")
