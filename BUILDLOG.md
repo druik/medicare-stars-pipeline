@@ -39,3 +39,23 @@ In production, HEDIS rates run 2-5 points higher than STARS rates for the same m
 **Output files:**
 - output/cbp_summary.md: measure-level comparison report
 - output/cbp_comparison.csv: patient-level results
+
+## Phase 3: C14 Medication Adherence (PDC-Based)
+
+**Goal:** Implement a pharmacy-claims-based adherence measure using PDC methodology.
+
+**Results:**
+- Denominator: 1,046 patients with hypertension who filled a RAS antagonist in 2023
+- Numerator: 735 patients with PDC >= 80%
+- Rate: 70.3%, 1-star rating
+- Mean PDC: 0.835, Median PDC: 0.893
+- 90 low-adherence patients (PDC < 50%) and 221 moderate-adherence patients (PDC 50-79%) dragged the rate below the 2-star cut point of 72%
+
+**Key finding:**
+High mean PDC does not guarantee a strong rate. The CMS cut points for C14 are aggressive (88% for 5 stars). Low-adherence outliers have outsized impact on the rate, which is why gap closure programs targeting non-adherent patients are high priority in MA quality operations.
+
+**Structural difference from CBP:**
+C14 is built entirely from pharmacy claims with no visit requirement. This is a fundamentally different data pipeline from encounter-based measures like C01.
+
+**PDC calculator:**
+Built as a reusable utility in measures/pdc_calculator.py with four unit tests covering perfect adherence, no fills, overlapping fills, and carryover fills from prior year.
