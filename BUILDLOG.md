@@ -21,3 +21,21 @@
 
 **Stack confirmed:**
 Python 3.13, DuckDB 1.5.1, Pandas 3.0.1, fhir.resources 8.2.0, Synthea with Java 17
+
+## Phase 2: STARS C01 and HEDIS CBP Measure Logic
+
+**Goal:** Run both measure specifications on the same synthetic population and produce a documented comparison.
+
+**Results:**
+- STARS C01: 1,486 denominator, 1,145 numerator, 77.1% rate, 4-star rating
+- HEDIS CBP: 1,489 denominator, 1,148 numerator, 77.1% rate
+- Rate convergence is expected: synthetic data has no medical-record-only observations, eliminating the hybrid method advantage HEDIS plans use in production
+- 8 patients had no BP reading in the measurement year, highest-priority gap closure targets
+- 3 patients excluded from STARS via simplified frailty proxy (age >= 81, 3+ ED visits)
+
+**Key finding documented:**
+In production, HEDIS rates run 2-5 points higher than STARS rates for the same measure due to hybrid method. That gap can be the difference between 4 and 5 stars on a Triple Weighted measure.
+
+**Output files:**
+- output/cbp_summary.md: measure-level comparison report
+- output/cbp_comparison.csv: patient-level results
