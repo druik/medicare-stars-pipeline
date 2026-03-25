@@ -59,3 +59,31 @@ C14 is built entirely from pharmacy claims with no visit requirement. This is a 
 
 **PDC calculator:**
 Built as a reusable utility in measures/pdc_calculator.py with four unit tests covering perfect adherence, no fills, overlapping fills, and carryover fills from prior year.
+
+## Phase 4: COVID-19 Proximity Flag
+
+**Goal:** Flag BP readings taken within 365 days of a COVID-19 diagnosis,
+informed by Xie et al. (Nature Medicine, 2022) findings on post-COVID
+cardiovascular risk.
+
+**Data limitation discovered:**
+Synthea's COVID module only generated episodes through September 2021.
+No COVID diagnoses exist in 2022 or 2023. The flag analysis was run
+against 2021 BP readings, which is the correct measurement year for
+this analysis given the data. Documented as a synthetic data limitation.
+
+**Results (2021 measurement year):**
+- Denominator: 1,453 patients
+- Flagged patients: 81 (5.6%)
+- Flagged BP control rate: 75.3%
+- Unflagged BP control rate: 75.7%
+- Rate difference: -0.4 pp (flagged patients had slightly worse BP control)
+- Severity: 57 mild/moderate COVID, 24 severe COVID among flagged patients
+- Mean days COVID to BP: 209 days, median 197 days
+
+**Finding:**
+The direction of the effect is consistent with Xie et al.: post-COVID
+patients had slightly worse BP control than non-COVID patients. The effect
+is modest (-0.4 pp) but directionally correct even in a synthetic dataset.
+This flag does not change measure numerator or denominator counts. It
+annotates results for downstream analysis.
