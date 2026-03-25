@@ -45,13 +45,28 @@ Synthetic Population: Synthea FHIR R4 (seed=42, ages 65-85, Massachusetts)
 
 ## Key Findings
 
-### Why the rates are identical in this pipeline
-Both programs produced a 77.1% rate on this synthetic population.
-This convergence is expected and intentional: Synthea produces a single
-administrative data stream with no medical-record-only observations. In a
-real Medicare Advantage plan, HEDIS rates are typically 2-5 percentage points
-higher than STARS rates for the same measure because the hybrid method
-recovers BP readings from medical records that never appear in claims data.
+### Why the rates appear identical but are not
+Both programs produced a rounded rate of 77.1%, but the exact rates differ:
+- HEDIS CBP exact rate: 77.0987%
+- STARS C01 exact rate: 77.0525%
+- Difference: 0.046 percentage points
+
+The difference is caused entirely by the 3 frailty-excluded patients.
+All 3 excluded patients had controlled BP (systolic < 140, diastolic < 90),
+meaning they met the numerator. Removing numerator patients from both
+numerator and denominator simultaneously produces a small rate decrease
+that is invisible at one decimal place rounding.
+
+This illustrates an important real-world dynamic: STARS frailty exclusions
+tend to slightly lower the reported rate when excluded patients are
+well-controlled. A plan with a large, well-managed frailty population
+could see their STARS rate drop relative to HEDIS purely due to exclusion
+mechanics, not actual performance differences.
+
+In production, HEDIS rates typically run 2-5 points higher than STARS rates
+for the same measure because the hybrid method recovers BP readings from
+medical records that never appear in claims data. Synthea cannot replicate
+this difference since it produces a single administrative data stream.
 
 ### What this means operationally
 A plan that reports 77% on HEDIS CBP using hybrid method might report
