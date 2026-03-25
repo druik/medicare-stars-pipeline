@@ -1,0 +1,8 @@
+duckdb>=0.10.0
+pandas>=2.0.0
+numpy>=1.26.0
+fhir.resources>=7.0.0
+pyyaml>=6.0
+faker>=24.0.0
+pytest>=8.0.0
+jupyter>=1.0.0

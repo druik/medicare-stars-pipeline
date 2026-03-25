@@ -1,0 +1,19 @@
+# Synthea population generation parameters for Medicare STARS pipeline
+# These are reference values - actual Synthea config is set via
+# synthea/src/main/resources/synthea.properties
+
+population:
+  size: 3000
+  age_min: 65
+  age_max: 85
+  state: "Massachusetts"   # Synthea default; change to your preference
+  seed: 42                 # Fixed seed for reproducibility
+
+conditions_to_seed:
+  - hypertension
+  - diabetes
+  - cardiovascular_disease
+
+# Expected output location after Synthea run
+output_path: "data/raw/"
+format: "fhir"             # Synthea output format: fhir (R4 JSON bundles)

@@ -1,0 +1,46 @@
+measurement_year:
+  start: "2023-01-01"
+  end: "2023-12-31"
+  year: 2023
+
+cbp_stars:
+  measure_id: "C01"
+  measure_name: "Controlling High Blood Pressure"
+  weight: 3
+  age_min: 18
+  age_max: 85
+  bp_systolic_threshold: 140
+  bp_diastolic_threshold: 90
+  cut_points:
+    2: 0.60
+    3: 0.68
+    4: 0.74
+    5: 0.79
+
+cbp_hedis:
+  measure_id: "CBP"
+  measure_name: "Controlling High Blood Pressure"
+  age_min: 18
+  age_max: 85
+  bp_systolic_threshold: 140
+  bp_diastolic_threshold: 90
+
+adherence_c14:
+  measure_id: "C14"
+  measure_name: "Medication Adherence for Hypertension (RAS Antagonists)"
+  weight: 3
+  pdc_threshold: 0.80
+  drug_class: "RAS_antagonist"
+  drug_classes_included:
+    - "ACE_inhibitor"
+    - "ARB"
+  cut_points:
+    2: 0.72
+    3: 0.79
+    4: 0.84
+    5: 0.88
+
+population:
+  age_min: 65
+  age_max: 85
+  enrollment_flag: "medicare_advantage"
