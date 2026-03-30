@@ -1,11 +1,3 @@
-I've been spending time understanding how Medicare Advantage quality measurement works, specifically where CMS Star Ratings and NCQA HEDIS diverge on the same clinical measure.
-
-I'd already built a HEDIS CBP pipeline, so I extended it to STARS and tested whether the differences I was reading about actually showed up in the data.
-
-When both measures returned 77.1%, my first instinct was that I'd made a logic error.
-
-I hadn't.
-
 The actual rates were 77.05% (STARS) vs 77.10% (HEDIS). The reason they appear identical turned out to be more instructive than a real divergence would have been. STARS applies frailty exclusions that HEDIS doesn't. Every excluded patient in this population had controlled BP, so removing them decreased both numerator and denominator simultaneously. At scale, that effect can move a plan across a star rating cut point on a Triple Weighted measure. On C01, the gap between 4 and 5 stars is less than 2 percentage points.
 
 The second finding was more operational. C14 (medication adherence, also Triple Weighted) had a mean PDC of 0.835 but a plan-level rate of 70.3%, below the 2-star cut point of 72%. Ninety patients with PDC under 50% pulled the rate down despite strong average adherence. This is the math behind why MA quality programs target the lowest adherers first, not average improvement.
@@ -17,9 +9,3 @@ Two structural differences worth naming explicitly:
 Same clinical logic → Different planning horizon and financial consequences.
 
 This work feels more relevant right now than it might have a few years ago. Star Ratings are declining across the industry, the bonus payment structure that funded a decade of supplemental benefits is under pressure, and CMS is actively overhauling the measure set. Understanding the mechanics at this level feels like the right foundation for the conversations happening in MA quality right now.
-
-My background is clinical, RN and former CNM. I've spent time at the moments that matter most in people's lives. Medicare Advantage quality is where that experience meets the data systems that are supposed to serve those moments, not obscure them.
-
-Full pipeline on GitHub. Synthetic data only, reproducible from scratch. Link in comments.
-
-#MedicareAdvantage #STARRatings #HEDIS #ClinicalInformatics #HealthcareData
